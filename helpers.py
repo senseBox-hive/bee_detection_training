@@ -1,6 +1,5 @@
 import torch
 from torch.utils.data import DataLoader
-device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Calculate accuracy (a classification metric)
 def accuracy_fn(y_true, y_pred):
@@ -37,7 +36,7 @@ def train_step(model: torch.nn.Module,
                loss_fn: torch.nn.Module,
                optimizer: torch.optim.Optimizer,
                accuracy_fn,
-               device: torch.device = device):
+               device: torch.device):
     train_loss = 0 
     train_acc = 0
     model.to(device)
@@ -72,7 +71,7 @@ def test_step(data_loader: torch.utils.data.DataLoader,
               model: torch.nn.Module,
               loss_fn: torch.nn.Module,
               accuracy_fn,
-              device: torch.device = device):
+              device: torch.device):
     test_loss, test_acc = 0, 0
     model.to(device)
     model.eval()
@@ -97,7 +96,7 @@ def eval_model(model: torch.nn.Module,
                data_loader: torch.utils.data.DataLoader, 
                loss_fn: torch.nn.Module, 
                accuracy_fn, 
-               device: torch.device = device):
+               device: torch.device):
     """Evaluates a given model on a given dataset.
 
     Args:
