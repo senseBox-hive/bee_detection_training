@@ -1,5 +1,50 @@
 import torch
 from torch.utils.data import DataLoader
+import random
+import matplotlib.pyplot as plt
+
+def predict_and_plot(model, data, device):
+    # Sample a few images from the training data to visualise predictions
+    sample_k = 36
+    samples = []
+    labels = []
+    for img, lbl in random.sample(list(data), k=sample_k):
+        samples.append(img)
+        labels.append(lbl)
+
+    # View the first sample shape and label
+    print(f"Sample image shape: {samples[0].shape}\nSample label: {labels[0]}({data.classes[labels[0]]})")
+
+    # Make predictions on the sampled training images
+    pred_probs = make_predictions(model=model, data=samples, device=device)
+    pred_classes = pred_probs.argmax(dim=1)
+
+    # Plot predictions (convert CHW tensors to HWC RGB images)
+    plt.figure(figsize=(9, 9))
+    nrows = 6
+    ncols = 6
+    for i, sample in enumerate(samples):
+        plt.subplot(nrows, ncols, i+1)
+
+        # sample is a Tensor in (C, H, W) with values in [0,1]
+        if isinstance(sample, torch.Tensor):
+            img = sample.permute(1, 2, 0).cpu().numpy()
+        else:
+            img = sample
+
+        # Show the RGB image
+        plt.imshow(img)
+
+        # Prediction and ground-truth labels (text form)
+        pred_label = data.classes[int(pred_classes[i].item())]
+        truth_label = data.classes[int(labels[i])]
+
+        title_text = f"Pred: {pred_label} | Truth: {truth_label}"
+        color = "g" if pred_label == truth_label else "r"
+        plt.title(title_text, fontsize=10, c=color)
+        plt.axis('off')
+    plt.tight_layout()
+    plt.show()
 
 # Calculate accuracy (a classification metric)
 def accuracy_fn(y_true, y_pred):
@@ -30,6 +75,26 @@ def print_train_time(start: float, end: float, device: torch.device = None):
     total_time = end - start
     print(f"Train time on {device}: {total_time:.3f} seconds")
     return total_time
+
+def make_predictions(model: torch.nn.Module, data: list, device: torch.device):
+    pred_probs = []
+    model.eval()
+    with torch.inference_mode():
+        for sample in data:
+            # Prepare sample
+            sample = torch.unsqueeze(sample, dim=0).to(device) # Add an extra dimension and send sample to device
+
+            # Forward pass (model outputs raw logit)
+            pred_logit = model(sample)
+
+            # Get prediction probability (logit -> prediction probability)
+            pred_prob = torch.softmax(pred_logit.squeeze(), dim=0) # note: perform softmax on the "logits" dimension, not "batch" dimension (in this case we have a batch size of 1, so can perform on dim=0)
+
+            # Get pred_prob off GPU for further calculations
+            pred_probs.append(pred_prob.cpu())
+            
+    # Stack the pred_probs to turn list into a tensor
+    return torch.stack(pred_probs)
 
 def train_step(model: torch.nn.Module,
                data_loader: torch.utils.data.DataLoader,
