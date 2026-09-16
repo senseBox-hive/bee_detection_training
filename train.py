@@ -130,5 +130,6 @@ def train_and_test(model, train_dataloader, test_dataloader, eval_dataloader, lo
     model_results = helpers.eval_model(model, eval_dataloader, loss_fn, helpers.accuracy_fn, device)
     print(model_results)
 
+    torch.save(model.state_dict(), f"model_{model.__class__.__name__}.pth")
 if __name__ == "__main__":
     main()
