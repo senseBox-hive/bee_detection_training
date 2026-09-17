@@ -34,6 +34,7 @@ def main():
         [
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomVerticalFlip(p=0.5),
+            transforms.ColorJitter(brightness=(0.5,1), contrast=(1,1), saturation=(1,1), hue=(0,0)),
             transforms.ToTensor()
         ])
 
@@ -87,10 +88,11 @@ def main():
         test_dataloader,
         eval_dataloader,
 
-        epochs=40,
+        epochs=100,
         loss_fn=nn.CrossEntropyLoss(),
         optimizer = optim.SGD(params=model_1.parameters(), 
-                             lr=0.1),
+                             lr=0.001,
+                             momentum=0.9),
         device=DEVICE
     )
     helpers.predict_and_plot(model_1, train_data, DEVICE)
