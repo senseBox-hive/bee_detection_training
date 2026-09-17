@@ -7,7 +7,7 @@ import numpy as np
 
 from baseModels import BeeModelConv as Net
 
-from ppq.api import espdl_quantize_torch
+from esp_ppq.api import espdl_quantize_torch
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 data_path = Path("../data")
@@ -66,12 +66,16 @@ if __name__ == '__main__':
     testDataLoader = torch.utils.data.DataLoader(
         dataset=feature_only_test_data, 
         batch_size=BATCH_SIZE, 
-        shuffle=True,
+        shuffle=False,
         collate_fn=collate_fn2
     )
 
-    model = Net().to(DEVICE)
-    model.load_state_dict(torch.load("./fmodel_BeeModelConv.pth", map_location=DEVICE))
+    model = Net(
+        input_shape=3, 
+        hidden_units=100,
+        output_shape=len(train_dataset.classes)
+    ).to(DEVICE)
+    model.load_state_dict(torch.load("../model_loss0.18_acc93.97.pth", map_location=DEVICE))
     # ! labels are determined by alphabetical order of the folder names in the dataset.
     # background = 0, bee_fast = 1, bee_slow = 2
     model.eval()
@@ -80,7 +84,7 @@ if __name__ == '__main__':
         model=model,
         espdl_export_file=ESPDL_MODEL_PATH,
         calib_dataloader=testDataLoader,
-        calib_steps=32,
+        calib_steps=256,
         input_shape=[1] + INPUT_SHAPE,
         inputs=[input_tensor],
         target=TARGET,
