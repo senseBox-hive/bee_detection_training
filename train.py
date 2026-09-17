@@ -7,6 +7,7 @@ import torchvision.transforms as transforms
 from torchvision import datasets
 from tqdm.auto import tqdm #progressbar
 from timeit import default_timer as timer
+import matplotlib.pyplot as plt
 
 import os
 from pathlib import Path
@@ -82,6 +83,9 @@ def main():
         output_shape=len(train_data.classes)
     )
 
+    train_acc_array = []
+    test_acc_array = []
+
     train_and_test(
         model_1,
         train_dataloader,
@@ -95,10 +99,24 @@ def main():
                              momentum=0.9),
         device=DEVICE
     )
+    
     helpers.predict_and_plot(model_1, train_data, DEVICE)
+    plt.plot(train_acc_array,test_acc_array)
 
 
-def train_and_test(model, train_dataloader, test_dataloader, eval_dataloader, loss_fn, optimizer, epochs=10, seed=42, device: torch.device = DEVICE):
+def train_and_test(
+    model, 
+    train_dataloader, 
+    test_dataloader, 
+    eval_dataloader, 
+    loss_fn, 
+    optimizer, 
+    epochs=10, 
+    seed=42, 
+    device: torch.device = DEVICE, 
+    train_acc_array = None,
+    test_acc_array = None
+    ):
     # Set the seed and start the timer
     model.to(device)
     torch.manual_seed(seed)
@@ -106,9 +124,9 @@ def train_and_test(model, train_dataloader, test_dataloader, eval_dataloader, lo
 
     # training and testing loop
     for epoch in tqdm(range(epochs)):
-        print(f"Epoch: {epoch}\n-------")
+        print(f"\nEpoch: {epoch}\n-----")
 
-        helpers.train_step(
+        train_loss, train_acc = helpers.train_step(
             data_loader=train_dataloader,
             model=model,
             loss_fn=loss_fn,
@@ -116,12 +134,16 @@ def train_and_test(model, train_dataloader, test_dataloader, eval_dataloader, lo
             accuracy_fn=helpers.accuracy_fn,
             device=device
         )
-        helpers.test_step(data_loader=test_dataloader,
+        test_loss, test_acc = helpers.test_step(data_loader=test_dataloader,
             model=model,
             loss_fn=loss_fn,
             accuracy_fn=helpers.accuracy_fn,
             device=device
         )
+        if train_acc_array:
+            train_acc_array(train_acc)
+        if test_acc_array:
+            test_acc_array.append(test_acc)
 
     # Calculate training time      
     train_time_end_on_cpu = timer()
@@ -133,5 +155,8 @@ def train_and_test(model, train_dataloader, test_dataloader, eval_dataloader, lo
     print(model_results)
 
     torch.save(model.state_dict(), f"model_{model.__class__.__name__}.pth")
+    
+
+
 if __name__ == "__main__":
     main()

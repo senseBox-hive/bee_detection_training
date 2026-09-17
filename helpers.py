@@ -131,6 +131,7 @@ def train_step(model: torch.nn.Module,
     train_loss /= len(data_loader)
     train_acc /= len(data_loader)
     print(f"Train loss: {train_loss:.5f} | Train accuracy: {train_acc:.2f}%")
+    return train_loss, train_acc
 
 def test_step(data_loader: torch.utils.data.DataLoader,
               model: torch.nn.Module,
@@ -156,6 +157,7 @@ def test_step(data_loader: torch.utils.data.DataLoader,
         test_loss /= len(data_loader)
         test_acc /= len(data_loader)
         print(f"Test loss: {test_loss:.5f} | Test accuracy: {test_acc:.2f}%\n")
+        return test_loss, test_acc
 
 def eval_model(model: torch.nn.Module, 
                data_loader: torch.utils.data.DataLoader, 
