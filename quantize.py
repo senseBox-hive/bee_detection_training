@@ -72,10 +72,10 @@ if __name__ == '__main__':
 
     model = Net(
         input_shape=3, 
-        hidden_units=100,
+        hidden_units=48,
         output_shape=len(train_dataset.classes)
     ).to(DEVICE)
-    model.load_state_dict(torch.load("../model_loss0.18_acc93.97.pth", map_location=DEVICE))
+    model.load_state_dict(torch.load("../model_loss0.19_acc92.98_hl48_lessblocks.pth", map_location=DEVICE))
     # ! labels are determined by alphabetical order of the folder names in the dataset.
     # background = 0, bee_fast = 1, bee_slow = 2
     model.eval()

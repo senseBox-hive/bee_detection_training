@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 from torchvision import datasets
 from tqdm.auto import tqdm #progressbar
 from timeit import default_timer as timer
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 import os
 from pathlib import Path
@@ -79,7 +79,7 @@ def main():
     ### CNN
     model_1 = BeeModelConv(
         input_shape=3,
-        hidden_units=100,
+        hidden_units=48,
         output_shape=len(train_data.classes)
     )
 
@@ -101,7 +101,7 @@ def main():
     )
     
     helpers.predict_and_plot(model_1, train_data, DEVICE)
-    plt.plot(train_acc_array,test_acc_array)
+    #plt.plot(train_acc_array,test_acc_array)
 
 
 def train_and_test(
