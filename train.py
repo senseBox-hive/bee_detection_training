@@ -8,13 +8,14 @@ from torchvision import datasets
 from tqdm.auto import tqdm #progressbar
 from timeit import default_timer as timer
 #import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
+import numpy as np
 
 import os
 from pathlib import Path
 import random
 
 import helpers
-from baseModels import BeeModelV0
 from baseModels import BeeModelConv
 
 random.seed("woof")
@@ -42,9 +43,6 @@ def main():
     train_data = datasets.ImageFolder(root=train_dir,transform=transform,target_transform=None)
     test_data = datasets.ImageFolder(root=test_dir,transform=transform)
     eval_data = datasets.ImageFolder(root=eval_dir,transform=transform)
-
-    ###3 Neural Net
-
     # Turn train and test Datasets into DataLoaders
     NUM_WORKERS = os.cpu_count()-1
     train_dataloader = DataLoader(dataset=train_data, 
@@ -61,23 +59,9 @@ def main():
                                 batch_size=32,
                                 num_workers=NUM_WORKERS, 
                                 shuffle=False)
-    model_0 = BeeModelV0(
-            input_shape=3*32*32, 
-            hidden_units=100,
-            output_shape=len(train_data.classes)
-            )
-    #train_and_test(
-    #    model_0, 
-    #    train_dataloader, 
-    #    test_dataloader, 
-    #    eval_dataloader, 
-    #    loss_fn = nn.CrossEntropyLoss(), 
-    #    optimizer = optim.SGD(params=model_0.parameters(), lr=1e-2),
-    #    device=DEVICE
-    #)
 
     ### CNN
-    model_1 = BeeModelConv(
+    model = BeeModelConv(
         input_shape=3,
         hidden_units=48,
         output_shape=len(train_data.classes)
@@ -87,20 +71,22 @@ def main():
     test_acc_array = []
 
     train_and_test(
-        model_1,
+        model,
         train_dataloader,
         test_dataloader,
         eval_dataloader,
 
         epochs=100,
         loss_fn=nn.CrossEntropyLoss(),
-        optimizer = optim.SGD(params=model_1.parameters(), 
+        optimizer = optim.SGD(params=model.parameters(), 
                              lr=0.001,
                              momentum=0.9),
         device=DEVICE
     )
     
-    helpers.predict_and_plot(model_1, train_data, DEVICE)
+    eval(model, eval_dataloader)
+
+    #helpers.predict_and_plot(model, train_data, DEVICE)
     #plt.plot(train_acc_array,test_acc_array)
 
 
@@ -155,7 +141,39 @@ def train_and_test(
     print(model_results)
 
     torch.save(model.state_dict(), f"model_{model.__class__.__name__}.pth")
+
+def eval(
+    model, 
+    eval_dataloader,
+):
+    model.eval()
+    #use eval data to evaluate the model
+    #get y_true and y_pred
+    y_true = []
+    y_pred = []
+    with torch.no_grad():
+        for X, y in eval_dataloader:
+            X, y = X.to(DEVICE), y.to(DEVICE)
+            y_true.append(y.cpu().numpy())
+            y_pred.append(model(X).argmax(dim=1).cpu().numpy())
+    y_true = np.concatenate(y_true)
+    y_pred = np.concatenate(y_pred)
+
+    # get accuracy
+    accuracy = (y_true == y_pred).mean()
+    print(f"Accuracy: {accuracy:.4f}")
     
+    # get confusion matrix
+    class_names = eval_dataloader.dataset.classes
+    cm = confusion_matrix(y_true, y_pred, labels=range(len(class_names)))
+    
+    label_width = max(len(name) for name in class_names)
+    count_width = max(len(str(cm.max())), 5)
+    
+    print("Confusion Matrix (rows: actual, columns: predicted):")
+    print(f"{'':>{label_width}}  " + "  ".join(f"{name:>{count_width}}" for name in class_names))
+    for name, row in zip(class_names, cm):
+        print(f"{name:>{label_width}}  " + "  ".join(f"{count:>{count_width}}" for count in row))
 
 
 if __name__ == "__main__":
